@@ -1,0 +1,51 @@
+/* ---------------------------------------------------------------------------
+   ONWARD — token scope
+
+   Bound to .bp-onward, which the blueprint puts on the device SCREEN, so these
+   resolve per mode exactly as an app resolves them per trait and nothing in the
+   studio shell can see them.
+
+   No raw hex outside this block. `npm run check:tokens` enforces it.
+--------------------------------------------------------------------------- */
+
+.bp-onward {
+  --pg: #f7f6f3;
+  --card: #ffffff;
+  --ink: #1f2421;
+  --muted: #6b736e;
+  --hairline: #e6e4de;
+
+  --ontime: #3f7d6a;
+  --delayed: #a8702c;
+  --cancelled: #9c4a3f;
+  --unknown: #6b736e;
+
+  --accent-fill: #e6efe9;
+  --accent-ink: #2f6354;
+
+  --card-shadow: 0 2px 10px -6px rgb(60 70 60 / 0.22);
+  --card-border: transparent;
+
+  background: var(--pg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+}
+
+.bp-onward[data-mode='dark'] {
+  --pg: #141716;
+  --card: #1d2120;
+  --ink: #eceeed;
+  --muted: #8f9793;
+  --hairline: #2a2f2d;
+
+  --ontime: #79bda8;
+  --delayed: #d9a96b;
+  --cancelled: #d98b7f;
+  --unknown: #8f9793;
+
+  --accent-fill: #22302b;
+  --accent-ink: #8fc9b6;
+
+  --card-shadow: none;
+  --card-border: #2a2f2d;
+}

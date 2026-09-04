@@ -1,0 +1,46 @@
+.ow-head {
+  padding: calc(var(--sd-safe-top) + 14px) 20px 12px;
+}
+.ow-station { font-size: 26px; font-weight: 650; letter-spacing: -0.022em; margin: 0; }
+.ow-now { font-size: 13px; color: var(--muted); margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+
+.ow-list { padding: 4px 16px calc(var(--sd-safe-bottom) + 20px); }
+
+.ow-row {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  padding: 13px 16px;
+  margin-bottom: 10px;
+}
+
+.ow-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ow-dest { font-size: 17px; font-weight: 550; letter-spacing: -0.008em; }
+.ow-time { font-size: 19px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.ow-time-was { text-decoration: line-through; color: var(--muted); font-size: 15px; margin-right: 7px; }
+
+.ow-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 7px;
+}
+.ow-calling {
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ow-plat { font-size: 12.5px; color: var(--muted); flex-shrink: 0; }
+
+/* Status is never colour alone — every state carries its word. */
+.ow-status { font-size: 12.5px; font-weight: 550; flex-shrink: 0; }
+.ow-status[data-s='ontime'] { color: var(--ontime); }
+.ow-status[data-s='delayed'] { color: var(--delayed); }
+.ow-status[data-s='cancelled'] { color: var(--cancelled); }
+.ow-status[data-s='unknown'] { color: var(--unknown); font-style: italic; }
+
+.ow-strike .ow-dest, .ow-strike .ow-time { text-decoration: line-through; color: var(--muted); }

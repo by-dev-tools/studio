@@ -1,0 +1,13 @@
+{
+  "id": "onward",
+  "name": "Onward",
+  "tagline": "Train departures, invented — the example project",
+  "platform": "ios",
+  "status": "active",
+  "sourceRepo": "(none — Onward is fictional)",
+  "tokenScope": "bp-onward",
+  "device": "iphone-16",
+  "defaultMode": "light",
+  "accent": "#3f7d6a",
+  "note": "A worked specimen, not a real product. It exists so a fresh clone of Studio runs and shows what a blueprint, a token scope, a brief and a canvas of variants look like together. Real work lives in workspace/, which this repo gitignores."
+}

@@ -1,0 +1,8 @@
+{
+  "defaultContributor": "example",
+  "devPort": 5177,
+  "contentRoots": {
+    "examples": "examples/",
+    "workspace": "workspace/"
+  }
+}

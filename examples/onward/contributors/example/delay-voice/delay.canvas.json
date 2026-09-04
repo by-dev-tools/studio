@@ -1,0 +1,19 @@
+{
+  "id": "example/onward/delay-voice/delay",
+  "title": "Three ways to say a train is late",
+  "project": "onward",
+  "lede": "All three render the same five departures, so the only thing that varies is the sentence. The row to watch is Eastbourne — it has no update at all, and a voice that reads well for a known nine-minute delay can quietly start inventing numbers for the case where nothing is known.",
+  "sections": [
+    {
+      "title": "The three voices",
+      "note": "Each is a different structural bet about what the board owes you: the fact, the answer, or the size of the problem.",
+      "rows": [
+        { "frames": [
+          { "view": "example/onward/delay-voice/status-word" },
+          { "view": "example/onward/delay-voice/revised-time" },
+          { "view": "example/onward/delay-voice/minutes-late" }
+        ]}
+      ]
+    }
+  ]
+}
