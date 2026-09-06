@@ -52,7 +52,7 @@ function exampleExplorations() {
       for (const slug of readdirSync(whoDir)) {
         const dir = join(whoDir, slug)
         if (!statSync(dir).isDirectory()) continue
-        out.push({ id: `${who}/${project}/${slug}`, dir })
+        out.push({ id: `${who}/${project}/${slug}`, dir, repoRoot: ROOT })
       }
     }
   }
@@ -61,7 +61,8 @@ function exampleExplorations() {
 
 /** workspace/contributors/<who>/<project>/<slug> */
 function workspaceExplorations() {
-  const base = join(ROOT, 'workspace/contributors')
+  const WORKSPACE = join(ROOT, 'workspace')
+  const base = join(WORKSPACE, 'contributors')
   if (!existsSync(base)) return []
   const out = []
   for (const who of readdirSync(base)) {
@@ -73,16 +74,24 @@ function workspaceExplorations() {
       for (const slug of readdirSync(projDir)) {
         const dir = join(projDir, slug)
         if (!statSync(dir).isDirectory()) continue
-        out.push({ id: `${who}/${project}/${slug}`, dir })
+        out.push({ id: `${who}/${project}/${slug}`, dir, repoRoot: WORKSPACE })
       }
     }
   }
   return out
 }
 
-function gitActivity(dir) {
-  const rel = relative(ROOT, dir)
-  const dates = sh('git', ['log', '--format=%aI', '--', rel])
+/**
+ * Dates come from the repo that OWNS the path, not from Studio's.
+ *
+ * The split put real work in a separate checkout at `workspace/`, which this
+ * repo gitignores — so `git log` run from here returns nothing for it, and
+ * every workspace exploration silently lost its dates while the bundled
+ * examples kept theirs. The owning root travels with each exploration.
+ */
+function gitActivity(dir, repoRoot) {
+  const rel = relative(repoRoot, dir)
+  const dates = sh('git', ['log', '--format=%aI', '--', rel], repoRoot)
   if (!dates) return null
   const list = dates.split('\n').filter(Boolean)
   return { started: list.at(-1) ?? null, updated: list[0] ?? null, commits: list.length }
@@ -125,7 +134,7 @@ function fetchPr(ref) {
 const ghReady = sh('gh', ['auth', 'status']) !== null
 
 const explorations = {}
-for (const { id, dir } of findExplorations()) {
+for (const { id, dir, repoRoot } of findExplorations()) {
   const metaPath = join(dir, 'exploration.json')
   let meta = {}
   if (existsSync(metaPath)) {
@@ -139,7 +148,7 @@ for (const { id, dir } of findExplorations()) {
   const refs = Array.isArray(meta.pr) ? meta.pr : meta.pr ? [meta.pr] : []
   const prs = ghReady ? refs.map(fetchPr) : refs.map((ref) => ({ ref, error: 'gh unavailable' }))
 
-  explorations[id] = { ...gitActivity(dir), prs }
+  explorations[id] = { ...gitActivity(dir, repoRoot), prs }
 }
 
 mkdirSync(OUT_DIR, { recursive: true })
