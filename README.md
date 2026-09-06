@@ -93,6 +93,7 @@ the phone drives the prototype.
 ```bash
 npm run publish -- --list
 npm run publish -- <canvas-id> --to ../<project>/design
+npm run publish -- <canvas-id> --to ../<project>/design --as proposals-d4
 ```
 
 Renders a canvas to a self-contained HTML record and writes it into the

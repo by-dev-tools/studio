@@ -8,7 +8,8 @@
  * request that lands the file is the ref you put in `exploration.json`, and
  * Studio reads its state back through `gh`.
  *
- *   npm run publish -- <canvas-id> --to ../ripe/design
+ *   npm run publish -- <canvas-id> --to ../<project>/design
+ *   npm run publish -- <canvas-id> --to ../<project>/design --as proposals-d4
  *   npm run publish -- --list
  *
  * The output is a STATIC snapshot. Prototypes are live React and none of that
@@ -30,7 +31,10 @@ const valueOf = (flag) => {
   const i = argv.indexOf(flag)
   return i >= 0 ? argv[i + 1] : undefined
 }
-const canvasId = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--to')
+const FLAGS_WITH_VALUES = ['--to', '--as']
+const canvasId = argv.find(
+  (a, i) => !a.startsWith('--') && !FLAGS_WITH_VALUES.includes(argv[i - 1]),
+)
 
 function build() {
   console.log('  building…')
@@ -188,7 +192,10 @@ if (!existsSync(dir)) {
   mkdirSync(dir, { recursive: true })
 }
 
-const name = `${basename(rendered.id)}.html`
+// The target repo's naming convention wins over the canvas slug — a project
+// that numbers its design rounds should not be forced to adopt Studio's ids.
+const asName = valueOf('--as')
+const name = `${(asName ?? basename(rendered.id)).replace(/\.html$/, '')}.html`
 const out = join(dir, name)
 writeFileSync(out, page(rendered, collectCss()))
 

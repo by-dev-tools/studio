@@ -265,8 +265,12 @@ the frame is for.
 
 ```bash
 npm run publish -- --list                       # what can be published
-npm run publish -- ben/ripe/digest-d4/digest --to ../ripe/design
+npm run publish -- <canvas-id> --to ../<project>/design
+npm run publish -- <canvas-id> --to ../<project>/design --as proposals-d4
 ```
+
+`--as` names the file. The target repo's convention wins over the canvas slug —
+a project that numbers its design rounds should not have to adopt Studio's ids.
 
 This is the seam, and it is deliberately thin: nothing is imported across the
 boundary in either direction, so neither repo can break the other. Studio writes
@@ -280,7 +284,10 @@ interactive and none of that survives. The page says so; do not let a reader
 discover it by tapping something inert.
 
 Publish when an exploration reaches a decision worth keeping next to the code,
-not on every change. Regenerating overwrites the file, so the exploration in
+not on every change. **Check the target repo's push gate before you commit
+there** — a project with a pre-push hook may run its full build and test suite
+for a doc-only file, which is slow but is still its gate. Do not reach for
+`--no-verify`; that is the repo owner's call, not yours. Regenerating overwrites the file, so the exploration in
 Studio stays the source and the record stays a snapshot of it.
 
 ## Methods
