@@ -11,7 +11,8 @@
     "check:tokens": "node scripts/check-tokens.mjs",
     "sync": "node scripts/sync-activity.mjs",
     "predev": "node scripts/sync-activity.mjs",
-    "prebuild": "node scripts/sync-activity.mjs"
+    "prebuild": "node scripts/sync-activity.mjs",
+    "publish": "node scripts/publish.mjs"
   },
   "dependencies": {
     "marked": "^18.0.11",

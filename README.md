@@ -88,12 +88,27 @@ Drag or two-finger scroll to pan, pinch or ⌘-scroll to zoom, ⌘0 to fit, spac
 pan over a live prototype. Clicking a frame's label expands it; clicking *into*
 the phone drives the prototype.
 
+## Publishing back to a project
+
+```bash
+npm run publish -- --list
+npm run publish -- <canvas-id> --to ../<project>/design
+```
+
+Renders a canvas to a self-contained HTML record and writes it into the
+project's own repo — one file, no external references, frames as rendered markup
+rather than screenshots. Nothing is imported across that boundary in either
+direction; Studio just writes a file. The loop closes on the other side, where
+the pull request that lands it becomes the ref in `exploration.json` and Studio
+reads its state back.
+
 ## Scripts
 
 ```bash
 npm run build         # tsc -b && vite build
 npm run sync          # refresh git dates + PR state
 npm run check:tokens  # no raw colour outside a token declaration
+npm run publish       # export a canvas into a project repo
 ```
 
 Conventions live in **[AGENTS.md](AGENTS.md)** — the single source of truth for

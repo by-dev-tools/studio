@@ -258,6 +258,31 @@ the frame is for.
 
 ---
 
+## Publishing back to a project
+
+`npm run publish -- <canvas-id> --to ../<project>/design` renders a canvas to a
+**self-contained HTML record** and writes it into that project's own repo.
+
+```bash
+npm run publish -- --list                       # what can be published
+npm run publish -- ben/ripe/digest-d4/digest --to ../ripe/design
+```
+
+This is the seam, and it is deliberately thin: nothing is imported across the
+boundary in either direction, so neither repo can break the other. Studio writes
+an ordinary file into an ordinary repo; the loop closes on the other side, where
+the pull request that lands that file is the ref you put in `exploration.json`
+and Studio reads its state back through `gh`.
+
+The record is **static**. Frames are rendered markup rather than screenshots —
+diffable, and they scale with the reader's zoom — but the live prototypes are
+interactive and none of that survives. The page says so; do not let a reader
+discover it by tapping something inert.
+
+Publish when an exploration reaches a decision worth keeping next to the code,
+not on every change. Regenerating overwrites the file, so the exploration in
+Studio stays the source and the record stays a snapshot of it.
+
 ## Methods
 
 On-demand playbooks in `docs/methods/`. Load one when the task matches; do not

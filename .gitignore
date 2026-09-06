@@ -11,3 +11,6 @@ src/generated/
 # separate repo. Git in THIS repo cannot see it, so it cannot be published by
 # accident. See README § Your own work.
 workspace/
+
+# publish build artifacts
+.publish/

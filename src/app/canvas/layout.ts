@@ -30,6 +30,13 @@ const GAP_X = 64
 const GAP_Y = 76
 const SUB_GAP = 72
 const COLUMN_GAP = 180
+/**
+ * Width budget before a new shelf starts, in world units. Roughly four phone
+ * frames plus their gutters — wide enough that a three-candidate question stays
+ * on one shelf, narrow enough that the board never becomes a corridor.
+ */
+const MAX_ROW_W = 5200
+const SHELF_GAP = 320
 const CAPTION_H = 96
 const TITLE_H = 58
 const META_H = 38
@@ -109,6 +116,46 @@ function stack(pieces: Built[], gap: number): Built {
     w = Math.max(w, p.w)
   }
   return { items, nodes, w, h: Math.max(0, y - gap) }
+}
+
+/**
+ * Pack columns into shelves rather than one unbounded strip.
+ *
+ * Left-to-right forever means the board grows without limit in one dimension:
+ * fine at two explorations, a long scroll right at ten, and "fit" degrades to
+ * an illegible zoom because it is bound by a width nothing else uses. Wrapping
+ * at a width budget keeps the board roughly square, which is the shape a
+ * viewport can actually show.
+ *
+ * A shelf's height is its tallest column, so short columns leave space beneath
+ * them. That is deliberate — the alternative is masonry packing, where adding
+ * one exploration silently rearranges every other one and you lose the board
+ * you had learned.
+ */
+function packColumns(columns: Built[]): Built {
+  const items: Placed[] = []
+  const nodes: Node[] = []
+  let x = 0
+  let y = 0
+  let shelfH = 0
+  let widest = 0
+
+  for (const col of columns) {
+    // Always place at least one column per shelf, however wide it is.
+    if (x > 0 && x + col.w > MAX_ROW_W) {
+      y += shelfH + SHELF_GAP
+      x = 0
+      shelfH = 0
+    }
+    const s = shift(col, x, y)
+    items.push(...s.items)
+    nodes.push(...s.nodes)
+    x += col.w + COLUMN_GAP
+    shelfH = Math.max(shelfH, col.h)
+    widest = Math.max(widest, x - COLUMN_GAP)
+  }
+
+  return { items, nodes, w: widest, h: y + shelfH }
 }
 
 /** Lay pieces left to right, top-aligned. */
@@ -252,7 +299,7 @@ export function buildLayout(projectId: string): Layout {
   }
   columns.push(briefSection(projectId, brief?.markdown))
 
-  const board = rowOf(columns, COLUMN_GAP)
+  const board = packColumns(columns)
 
   // The board's name sits above the strip — the only object outside a
   // container, because it names the board rather than living on it.
