@@ -135,12 +135,21 @@ function Item({
     )
   }
 
+  if (item.kind === 'divider') {
+    return (
+      <div className="cvi cvi-divider" style={style}>
+        <span>{item.text}</span>
+      </div>
+    )
+  }
+
   if (item.kind === 'container') {
     return (
       <section
         className="cvi cvi-box"
         style={{ ...style, height: item.rect.h }}
         data-level={item.level}
+        data-past={item.past ? '' : undefined}
         id={`box-${item.id}`}
       >
         <header className="cvi-box-head" style={{ minHeight: item.headH }}>

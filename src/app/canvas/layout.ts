@@ -54,6 +54,8 @@ export type Placed =
       exploration?: Exploration
       level: 1 | 2
       headH: number
+      /** Shipped, parked or archived — kept, but visually stood down. */
+      past?: boolean
     }
   | {
       kind: 'frame'
@@ -69,6 +71,7 @@ export type Placed =
   | { kind: 'doc'; id: string; rect: Rect; markdown: string; label: string }
   | { kind: 'empty'; id: string; rect: Rect; text: string }
   | { kind: 'title'; id: string; rect: Rect; text: string; note?: string }
+  | { kind: 'divider'; id: string; rect: Rect; text: string }
 
 /** The navigable tree the sidebar renders. Every node can be focused. */
 export type Node = {
@@ -132,7 +135,7 @@ function stack(pieces: Built[], gap: number): Built {
  * one exploration silently rearranges every other one and you lose the board
  * you had learned.
  */
-function packColumns(columns: Built[]): Built {
+function packColumns(columns: Built[], past: Built[] = []): Built {
   const items: Placed[] = []
   const nodes: Node[] = []
   let x = 0
@@ -140,19 +143,37 @@ function packColumns(columns: Built[]): Built {
   let shelfH = 0
   let widest = 0
 
-  for (const col of columns) {
-    // Always place at least one column per shelf, however wide it is.
-    if (x > 0 && x + col.w > MAX_ROW_W) {
-      y += shelfH + SHELF_GAP
-      x = 0
-      shelfH = 0
+  const place = (cols: Built[]) => {
+    for (const col of cols) {
+      // Always place at least one column per shelf, however wide it is.
+      if (x > 0 && x + col.w > MAX_ROW_W) {
+        y += shelfH + SHELF_GAP
+        x = 0
+        shelfH = 0
+      }
+      const s = shift(col, x, y)
+      items.push(...s.items)
+      nodes.push(...s.nodes)
+      x += col.w + COLUMN_GAP
+      shelfH = Math.max(shelfH, col.h)
+      widest = Math.max(widest, x - COLUMN_GAP)
     }
-    const s = shift(col, x, y)
-    items.push(...s.items)
-    nodes.push(...s.nodes)
-    x += col.w + COLUMN_GAP
-    shelfH = Math.max(shelfH, col.h)
-    widest = Math.max(widest, x - COLUMN_GAP)
+  }
+
+  place(columns)
+
+  if (past.length > 0) {
+    y += shelfH + SHELF_GAP * 1.4
+    x = 0
+    shelfH = 0
+    items.push({
+      kind: 'divider',
+      id: 'kept-divider',
+      rect: { x: 0, y, w: Math.max(widest, 1200), h: 60 },
+      text: 'Kept for the record',
+    })
+    y += 110
+    place(past)
   }
 
   return { items, nodes, w: widest, h: y + shelfH }
@@ -186,6 +207,7 @@ function container(
     note?: string
     exploration?: Exploration
     level: 1 | 2
+    past?: boolean
   },
   body: Built,
 ): Built {
@@ -210,6 +232,7 @@ function container(
         note: opts.note,
         exploration: opts.exploration,
         level: opts.level,
+        past: opts.past,
         headH,
       },
       ...inner.items,
@@ -292,14 +315,21 @@ export function buildLayout(projectId: string): Layout {
   const project = projectById(projectId)
   const { brief } = projectSummary(projectId)
 
-  const columns: Built[] = []
-  columns.push(blueprintSection(projectId, project))
-  for (const e of [...liveExplorations(projectId), ...pastExplorations(projectId)]) {
-    columns.push(explorationSection(e, projectId, project))
+  // Live work first and prominent; work that shipped or stopped is KEPT, on its
+  // own shelf below a divider. Deleting it would throw away the reason a
+  // decision was made; leaving it mixed in would make the board about history
+  // rather than about what is in flight.
+  const live: Built[] = [blueprintSection(projectId, project)]
+  for (const e of liveExplorations(projectId)) {
+    live.push(explorationSection(e, projectId, project))
   }
-  columns.push(briefSection(projectId, brief?.markdown))
+  live.push(briefSection(projectId, brief?.markdown))
 
-  const board = packColumns(columns)
+  const past = pastExplorations(projectId).map((e) =>
+    explorationSection(e, projectId, project, true),
+  )
+
+  const board = packColumns(live, past)
 
   // The board's name sits above the strip — the only object outside a
   // container, because it names the board rather than living on it.
@@ -356,6 +386,7 @@ function explorationSection(
   e: Exploration,
   projectId: string,
   project: ReturnType<typeof projectById>,
+  past = false,
 ): Built {
   const blueprints = blueprintsFor(projectId)
   const placed = new Set<string>()
@@ -448,6 +479,7 @@ function explorationSection(
       note: [e.question, lede].filter(Boolean).join('\n\n'),
       exploration: e,
       level: 1,
+      past,
     },
     stack(parts.length > 0 ? parts : [emptyNote(`${e.id}-empty`, 'No frames yet.')], SUB_GAP),
   )

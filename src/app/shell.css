@@ -1157,3 +1157,28 @@ body.canvas-grab .cv-viewport { cursor: grab; }
     animation: none;
   }
 }
+
+/* --- kept for the record --------------------------------------------------- */
+
+/* Work that shipped or stopped is kept on its own shelf, below the line, stood
+   down rather than deleted. Deleting it would throw away the reason a decision
+   was made; leaving it mixed in would make the board about history instead of
+   about what is in flight. */
+.cvi-divider {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--ink-faint);
+}
+.cvi-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.cvi-box[data-past] { opacity: 0.62; }
+.cvi-box[data-past]:hover { opacity: 1; transition: opacity var(--dur) var(--ease); }
