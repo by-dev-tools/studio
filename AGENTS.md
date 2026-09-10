@@ -237,6 +237,14 @@ everything else. The same goes for briefs.
 
 ## Laws that hold on every route
 
+**Real fonts, self-hosted.** A project's faces come from `@fontsource/*`,
+imported at the top of its `tokens.css` as latin subsets. Self-hosted rather
+than a Google CDN link, for two reasons: a prototype has to render offline, and
+a published record has to be one file that opens anywhere — a CDN `@import`
+breaks both. Install the package at the repo root and import it from the scope
+that uses it; `publish` inlines the faces a record needs as data URIs and drops
+the rest.
+
 **Tokens.** No raw hex outside a token declaration — `npm run check:tokens`
 enforces it. Studio chrome reads `src/index.css`; prototype content reads its
 project's scope (`<root>/<project>/tokens.css`). A prototype must never read studio

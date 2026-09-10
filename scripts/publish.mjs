@@ -49,14 +49,70 @@ function build() {
   })
 }
 
-/** Every style the app has, from the client build — one file, already bundled. */
-function collectCss() {
+/**
+ * Every style the app has, from the client build — with the font faces this
+ * record needs inlined, and the ones it cannot use dropped.
+ *
+ * The bundled CSS references woff2 by path, which resolves inside the app and
+ * nowhere else. A published record is one file that has to open from anywhere,
+ * so its faces travel with it as data URIs. Every project's fonts are in that
+ * one bundle, though, so a ripe record would otherwise carry health-tracker's
+ * Radley — filtering first keeps it to what is actually used.
+ */
+function collectCss(tokenScope) {
   const dir = join(CLIENT_DIR, 'assets')
   if (!existsSync(dir)) throw new Error('client build produced no assets')
-  return readdirSync(dir)
+
+  let css = readdirSync(dir)
     .filter((f) => f.endsWith('.css'))
     .map((f) => readFileSync(join(dir, f), 'utf8'))
     .join('\n')
+
+  css = dropUnusedFaces(css, tokenScope)
+
+  let inlined = 0
+  const out = css.replace(/url\((["']?)([^)"']+\.(?:woff2?|ttf|otf))\1\)/g, (whole, _q, ref) => {
+    const file = join(dir, basename(ref))
+    if (!existsSync(file)) return whole
+    const type = ref.endsWith('.woff2')
+      ? 'font/woff2'
+      : ref.endsWith('.woff')
+        ? 'font/woff'
+        : 'font/ttf'
+    inlined++
+    return `url(data:${type};base64,${readFileSync(file).toString('base64')})`
+  })
+  if (inlined > 0) console.log(`  inlined ${inlined} font file(s)`)
+  return out
+}
+
+/**
+ * Keep a face only if its family name appears inside the project's token scope.
+ *
+ * Deliberately a substring test rather than parsing font stacks: the bundler
+ * strips the quotes off `font-family`, and projects declare their stacks in
+ * custom properties (--serif, --sans, --mono) as often as in font-family, so
+ * anything narrower misses one form or the other.
+ */
+function dropUnusedFaces(css, tokenScope) {
+  if (!tokenScope) return css
+
+  let scopeText = ''
+  for (const block of css.matchAll(new RegExp(`\\.${tokenScope}[^{]*\\{([^}]*)\\}`, 'g'))) {
+    scopeText += block[1].toLowerCase()
+  }
+  if (!scopeText) return css
+
+  let dropped = 0
+  const kept = css.replace(/@font-face\s*\{[^}]*\}/g, (face) => {
+    const fam = face.match(/font-family:\s*['"]?([^;'"}]+)/)
+    if (!fam) return face
+    if (scopeText.includes(fam[1].trim().toLowerCase())) return face
+    dropped++
+    return ''
+  })
+  if (dropped > 0) console.log(`  dropped ${dropped} @font-face rule(s) this record cannot use`)
+  return kept
 }
 
 async function loadRenderer() {
@@ -197,7 +253,7 @@ if (!existsSync(dir)) {
 const asName = valueOf('--as')
 const name = `${(asName ?? basename(rendered.id)).replace(/\.html$/, '')}.html`
 const out = join(dir, name)
-writeFileSync(out, page(rendered, collectCss()))
+writeFileSync(out, page(rendered, collectCss(rendered.tokenScope)))
 
 const frames = rendered.sections.reduce((n, s) => n + s.rows.flat().length, 0)
 console.log(`\n✓ ${out}`)

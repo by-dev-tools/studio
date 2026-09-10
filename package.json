@@ -15,6 +15,10 @@
     "publish": "node scripts/publish.mjs"
   },
   "dependencies": {
+    "@fontsource/gantari": "^5.3.0",
+    "@fontsource/geist-mono": "^5.3.0",
+    "@fontsource/hanken-grotesk": "^5.3.0",
+    "@fontsource/radley": "^5.3.0",
     "marked": "^18.0.11",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
