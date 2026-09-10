@@ -72,6 +72,10 @@ for (const dir of SCAN_DIRS) {
     lines.forEach((line, i) => {
       // A comment explaining a token's provenance may quote its value.
       if (/^\s*(\/\*|\*|\/\/)/.test(line)) return
+      // A mask is a stencil: its colour channel is ignored and only alpha is
+      // read, so the value there is not a design decision and tokenising it
+      // would say something untrue about what the value means.
+      if (/-?mask(-image)?\s*:/.test(line)) return
       for (const match of line.matchAll(HEX)) {
         violations.push({ rel, line: i + 1, value: match[0], text: line.trim() })
       }

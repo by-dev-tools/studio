@@ -1182,3 +1182,68 @@ body.canvas-grab .cv-viewport { cursor: grab; }
 
 .cvi-box[data-past] { opacity: 0.62; }
 .cvi-box[data-past]:hover { opacity: 1; transition: opacity var(--dur) var(--ease); }
+
+/* --- the overview --------------------------------------------------------- */
+
+.ix { padding: 52px 44px 120px; max-width: 1240px; }
+
+.ix-head { margin: 0 0 14px; }
+.ix-head h1 { font-size: 32px; font-weight: 650; letter-spacing: -0.03em; margin: 0 0 10px; }
+.ix-head p { font-size: 15px; line-height: 1.62; color: var(--ink-soft); margin: 0; max-width: 66ch; }
+.ix-head a { color: var(--link); white-space: nowrap; }
+.ix-head a:hover { text-decoration: underline; }
+
+.ix-band {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ix-band:hover .ix-band-title h2 { color: var(--link); }
+.ix-band:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 8px; }
+
+.ix-band-title { display: flex; align-items: center; gap: 10px; }
+.ix-band-title h2 {
+  font-size: 19px;
+  font-weight: 620;
+  letter-spacing: -0.018em;
+  margin: 0;
+  transition: color var(--dur-fast) var(--ease);
+}
+.ix-band-tagline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 9px 0 0; }
+
+.ix-band-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 13px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.ix-fact-quiet { color: var(--ink-faint); }
+.ix-fact-shipped { color: var(--st-shipped); font-weight: 550; }
+
+.ix-open { list-style: none; margin: 15px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.ix-open li { display: flex; align-items: baseline; gap: 9px; font-size: 13px; }
+.ix-open-title { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The frames are the row's portrait, not targets — the whole band is the link,
+   and a prototype that swallowed the click would make the row feel broken. */
+.ix-band-frames {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to right, #000 78%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 78%, transparent 100%);
+}
+.ix-thumb { flex-shrink: 0; }
+
+.ix-nothing { font-size: 13px; color: var(--ink-faint); margin: 0; font-style: italic; }
+
+@media (max-width: 900px) {
+  .ix-band { grid-template-columns: 1fr; gap: 22px; }
+}
