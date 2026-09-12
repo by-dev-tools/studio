@@ -3,8 +3,8 @@ import { Phone } from '../../kit/device'
 import { ExplorationMetaLine } from '../Meta'
 import { viewById } from '../../registry'
 import { Markdown } from '../Markdown'
-import { buildLayout, type Node, type Placed } from './layout'
-import { useViewport, type Rect } from './useViewport'
+import { buildLayout, type Placed } from './layout'
+import { useViewport } from './useViewport'
 import { originOf, type Origin } from '../useFlip'
 
 /**
@@ -13,29 +13,20 @@ import { originOf, type Origin } from '../useFlip'
  */
 export function InfiniteCanvas({
   canvasId,
-  focusRect,
-  focusToken,
-  onTree,
   onOpenFrame,
   onOpenDoc,
 }: {
   canvasId: string
-  focusRect?: Rect
-  /** Changes on every jump request, so jumping twice to the same node works. */
-  focusToken?: string
-  onTree: (tree: Node[]) => void
   onOpenFrame: (viewId: string, origin: Origin) => void
   onOpenDoc: (label: string, markdown: string, origin: Origin) => void
 }) {
   const layout = useMemo(() => buildLayout(canvasId), [canvasId])
   const getBounds = useCallback(() => layout.bounds, [layout])
-  const { ref, vp, panning, fit, focus, zoomBy, onPointerDown } = useViewport(getBounds)
+  const { ref, vp, panning, fit, zoomBy, onPointerDown } = useViewport(getBounds)
 
   /** Bumping a frame's key remounts it, returning the prototype to step zero. */
   const [resets, setResets] = useState<Record<string, number>>({})
   const resetFrame = (id: string) => setResets((r) => ({ ...r, [id]: (r[id] ?? 0) + 1 }))
-
-  useEffect(() => onTree(layout.tree), [layout, onTree])
 
   /**
    * Fit once the viewport actually HAS a size. Fitting on mount is a race: the
@@ -61,12 +52,6 @@ export function InfiniteCanvas({
     ro.observe(el)
     return () => ro.disconnect()
   }, [canvasId, fit, ref])
-
-  // A sidebar click pans and zooms to the thing instead of navigating.
-  useEffect(() => {
-    if (focusRect) focus(focusRect)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusToken])
 
   return (
     <div

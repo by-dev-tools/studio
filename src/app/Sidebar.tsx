@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { canvasEntriesFor, projects, statusLabel } from '../registry'
-import type { Node } from './canvas/layout'
-import type { Rect } from './canvas/useViewport'
 
 /**
  * Collapsible rail with a nested tree.
@@ -13,13 +11,9 @@ import type { Rect } from './canvas/useViewport'
 export function Sidebar({
   activeProject,
   activeCanvas,
-  tree,
-  onJump,
 }: {
   activeProject?: string
   activeCanvas?: string
-  tree: Node[]
-  onJump: (rect: Rect, id: string) => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -83,36 +77,24 @@ export function Sidebar({
                   <span className="sb-item-name sb-label">{p.name}</span>
                 </a>
 
-                {/* An open project lists its canvases; the open canvas lists
-                    its own sections beneath it. Two levels, so the rail shows
-                    where you are without showing everything at once. */}
+                {/* Two levels, and that is the whole rail: a project, then one
+                    item per canvas. Disclosing each canvas's sections under it
+                    repeated the canvas's own name and then listed every frame,
+                    which is three levels to reach a thing the canvas already
+                    shows you. */}
                 {active && (
                   <div className="sb-tree sb-label">
-                    {canvasEntriesFor(p.id).map((entry) => {
-                      const open = entry.id === activeCanvas
-                      return (
-                        <div className="sb-node" key={entry.id}>
-                          <div className="sb-nodeRow">
-                            <span className="sb-twist is-leaf" aria-hidden />
-                            <a
-                              className="sb-nodeName"
-                              href={`#/c/${entry.id}`}
-                              aria-current={open ? 'page' : undefined}
-                              title={entry.title}
-                            >
-                              {entry.title}
-                            </a>
-                          </div>
-                          {open && tree.length > 0 && (
-                            <div className="sb-children">
-                              {tree.map((node) => (
-                                <TreeNode key={node.id} node={node} depth={1} onJump={onJump} />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                    {canvasEntriesFor(p.id).map((entry) => (
+                      <a
+                        key={entry.id}
+                        className="sb-nodeName sb-canvas"
+                        href={`#/c/${entry.id}`}
+                        aria-current={entry.id === activeCanvas ? 'page' : undefined}
+                        title={entry.title}
+                      >
+                        {entry.title}
+                      </a>
+                    ))}
                     {status && <span className="sb-note">{status}</span>}
                   </div>
                 )}
@@ -134,50 +116,5 @@ export function Sidebar({
         </div>
       </div>
     </aside>
-  )
-}
-
-function TreeNode({
-  node,
-  depth,
-  onJump,
-}: {
-  node: Node
-  depth: number
-  onJump: (rect: Rect, id: string) => void
-}) {
-  // Top-level branches open; deeper ones stay shut so the tree cannot sprawl.
-  const [open, setOpen] = useState(depth === 0)
-  const branch = (node.children?.length ?? 0) > 0
-
-  return (
-    <div className="sb-node" style={{ paddingLeft: depth === 0 ? 0 : 12 }}>
-      <div className="sb-nodeRow">
-        {branch ? (
-          <button
-            className={`sb-twist${open ? ' is-open' : ''}`}
-            onClick={() => setOpen((o) => !o)}
-            aria-label={open ? `Collapse ${node.label}` : `Expand ${node.label}`}
-            aria-expanded={open}
-          />
-        ) : (
-          <span className="sb-twist is-leaf" aria-hidden />
-        )}
-        <button
-          className={`sb-nodeName sb-kind-${node.kind}`}
-          onClick={() => onJump(node.rect, node.id)}
-          title={node.label}
-        >
-          {node.label}
-        </button>
-      </div>
-      {branch && open && (
-        <div className="sb-children">
-          {node.children!.map((c) => (
-            <TreeNode key={c.id} node={c} depth={depth + 1} onJump={onJump} />
-          ))}
-        </div>
-      )}
-    </div>
   )
 }

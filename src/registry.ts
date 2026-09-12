@@ -51,6 +51,8 @@ export type Project = {
   device?: DeviceId
   defaultMode?: 'light' | 'dark'
   accent?: string
+  /** Overrides the name derived for the blueprints canvas. */
+  blueprintsTitle?: string
   note?: string
 }
 
@@ -591,6 +593,40 @@ export function blueprintsCanvasId(project: string): string {
   return `${project}/blueprints`
 }
 
+/**
+ * Name the blueprints canvas after what is on it.
+ *
+ * "Blueprints" says what the folder IS and nothing about what it holds, which
+ * is no use in a rail you scan. The screens already carry the answer: three
+ * views called "Home · evening", "Home · morning" and "Home · night" are the
+ * Home screen, so that is what the canvas is called. A project can override it
+ * with `blueprintsTitle` when the derivation reads badly.
+ */
+export function blueprintsTitle(project: string): string {
+  const declared = projectById(project)?.blueprintsTitle
+  if (declared) return declared
+
+  const names = blueprintsFor(project).map((v) => v.meta.name)
+  if (names.length === 0) return 'Reference screens'
+  if (names.length === 1) return names[0]
+
+  const shared = commonPrefix(names)
+  return shared || 'Reference screens'
+}
+
+/** Longest shared opening, cut at a separator so a word is never halved. */
+function commonPrefix(names: string[]): string {
+  let prefix = names[0]
+  for (const name of names.slice(1)) {
+    let i = 0
+    while (i < prefix.length && i < name.length && prefix[i] === name[i]) i++
+    prefix = prefix.slice(0, i)
+  }
+  // Trim back to the last separator or word boundary.
+  const cut = prefix.replace(/[\s·—–-]+$/, '').trim()
+  return cut.length >= 3 ? cut : ''
+}
+
 export function canvasEntriesFor(project: string): CanvasEntry[] {
   const entries: CanvasEntry[] = []
 
@@ -600,7 +636,7 @@ export function canvasEntriesFor(project: string): CanvasEntry[] {
       id: blueprintsCanvasId(project),
       kind: 'blueprints',
       project,
-      title: 'Blueprints',
+      title: blueprintsTitle(project),
       lede: 'Production-faithful reference screens. Everything else branches from these.',
       frames: bps,
     })
