@@ -321,7 +321,24 @@ npm run sync         # refresh git dates + PR state
 npm run check:tokens # fails on raw hex outside a token declaration
 ```
 
-**A project is an infinite canvas.** Pan by dragging, two-finger scroll, or
+**A canvas is one FEATURE's surface, and it is what you open.**
+
+```
+#/                 every project
+#/p/<project>      every canvas in one project
+#/c/<canvas>       one feature's canvas
+```
+
+The first two are indexes; only the last is a working surface. A project used
+to be a single canvas holding every exploration, which does not survive a real
+project — at six features it is a wall, and the thing you came for is somewhere
+in it. A project's blueprints get their own canvas at `<project>/blueprints` so
+they are reachable the same way without pretending to be an exploration.
+
+This shape serves both workspace kinds: several independent projects, or one
+product whose sub-areas are the projects.
+
+**The canvas itself is infinite.** Pan by dragging, two-finger scroll, or
 holding space; zoom with pinch or ⌘-scroll; ⌘0 fits. Frames render LIVE at true
 size in world coordinates — a 393pt phone is 393 units wide — and the viewport
 transform does all scaling, so type keeps its real ratios at every zoom.
@@ -341,10 +358,18 @@ Layout is generated from the content, not authored by hand
 - Clicking a frame's **label** expands it; clicking INTO the phone reaches the
   prototype, which is live. Never wrap a frame in a button.
 
-There are only three routes, and the third is the same surface as the second:
+Do not add a fourth level. If something needs to be reachable, it belongs on a
+canvas with a jump link in the sidebar — a jump pans and zooms to it rather
+than navigating.
 
-`#/` · `#/p/<project>` · `#/p/<project>?v=<view>` · `#/brief`
+**Prototypes are live, so build them live.** A frame is a running React tree and
+the canvas passes clicks through to it; a view whose controls do nothing is a
+picture of a screen, which is the thing this repo exists to avoid. If the
+product has locked an interaction, implement it as locked — `projects/ripe`'s
+swipe-to-resolve is the worked example, with the drag driving the drain, the
+exhale, the slip, and an undo that plays the whole thing backwards.
 
-Do not add nested pages. If something needs to be reachable, it belongs on the
-project canvas with a jump link in the sidebar — a jump pans and zooms to it
-rather than navigating.
+**Documents show their content.** A doc object on the canvas renders a real
+excerpt, clipped with a fade. A one-line preview is the worst of both — it looks
+like a document and delivers a caption, so the only way to get value is to open
+it, and the object on the board becomes furniture.

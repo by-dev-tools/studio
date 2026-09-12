@@ -960,14 +960,31 @@ body.canvas-grab .cv-viewport { cursor: grab; }
   font-weight: 600;
   color: var(--ink);
 }
-.cvi-doc-preview {
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--ink-faint);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+/* The excerpt is clipped by a fade, not an ellipsis — it should read as a page
+   that continues, which is true, rather than a sentence that was truncated. */
+.cvi-doc-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 97%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 97%);
+}
+.cvi-doc-body .md { font-size: 13.5px; line-height: 1.6; }
+.cvi-doc-body .md h1 { font-size: 15px; margin: 14px 0 6px; }
+.cvi-doc-body .md h2 { font-size: 13.5px; margin: 14px 0 5px; }
+.cvi-doc-body .md h3 { font-size: 12.5px; margin: 12px 0 4px; }
+.cvi-doc-body .md p, .cvi-doc-body .md ul, .cvi-doc-body .md ol { margin: 0 0 9px; }
+.cvi-doc-body .md li { margin: 0 0 3px; }
+.cvi-doc-body .md table { font-size: 12px; }
+.cvi-doc-body .md hr { margin: 12px 0; }
+
+.cvi-doc-more {
+  align-self: flex-start;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--link);
+  padding-top: 2px;
 }
 
 /* --- zoom HUD ------------------------------------------------------------- */
@@ -1247,3 +1264,19 @@ body.canvas-grab .cv-viewport { cursor: grab; }
 @media (max-width: 900px) {
   .ix-band { grid-template-columns: 1fr; gap: 22px; }
 }
+
+.ix-linkish {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--link);
+  cursor: pointer;
+}
+.ix-linkish:hover { text-decoration: underline; }
+
+/* A canvas whose work has shipped or stopped is kept, and stood down. */
+.ix-band[data-past] { opacity: 0.6; }
+.ix-band[data-past]:hover { opacity: 1; }
+
+.sb-nodeName[aria-current='page'] { background: var(--selected); color: var(--ink); font-weight: 550; }

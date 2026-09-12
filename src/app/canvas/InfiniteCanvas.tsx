@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Phone } from '../../kit/device'
 import { ExplorationMetaLine } from '../Meta'
 import { viewById } from '../../registry'
+import { Markdown } from '../Markdown'
 import { buildLayout, type Node, type Placed } from './layout'
 import { useViewport, type Rect } from './useViewport'
 import { originOf, type Origin } from '../useFlip'
@@ -11,14 +12,14 @@ import { originOf, type Origin } from '../useFlip'
  * size; documents sit on it as compact objects and expand over it.
  */
 export function InfiniteCanvas({
-  projectId,
+  canvasId,
   focusRect,
   focusToken,
   onTree,
   onOpenFrame,
   onOpenDoc,
 }: {
-  projectId: string
+  canvasId: string
   focusRect?: Rect
   /** Changes on every jump request, so jumping twice to the same node works. */
   focusToken?: string
@@ -26,7 +27,7 @@ export function InfiniteCanvas({
   onOpenFrame: (viewId: string, origin: Origin) => void
   onOpenDoc: (label: string, markdown: string, origin: Origin) => void
 }) {
-  const layout = useMemo(() => buildLayout(projectId), [projectId])
+  const layout = useMemo(() => buildLayout(canvasId), [canvasId])
   const getBounds = useCallback(() => layout.bounds, [layout])
   const { ref, vp, panning, fit, focus, zoomBy, onPointerDown } = useViewport(getBounds)
 
@@ -44,22 +45,22 @@ export function InfiniteCanvas({
   const fitted = useRef<string | null>(null)
   useEffect(() => {
     fitted.current = null
-  }, [projectId])
+  }, [canvasId])
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const maybeFit = () => {
-      if (fitted.current === projectId) return
+      if (fitted.current === canvasId) return
       if (el.clientWidth < 40 || el.clientHeight < 40) return
-      fitted.current = projectId
+      fitted.current = canvasId
       fit()
     }
     maybeFit()
     const ro = new ResizeObserver(maybeFit)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [projectId, fit, ref])
+  }, [canvasId, fit, ref])
 
   // A sidebar click pans and zooms to the thing instead of navigating.
   useEffect(() => {
@@ -191,7 +192,14 @@ function Item({
           </svg>
           {item.label}
         </span>
-        <span className="cvi-doc-preview">{firstProse(item.markdown)}</span>
+
+        {/* A real excerpt, rendered — headings, emphasis and all — clipped with
+            a fade rather than an ellipsis, so it reads as a page continuing
+            rather than a string that was cut. */}
+        <span className="cvi-doc-body">
+          <Markdown>{excerpt(item.markdown)}</Markdown>
+        </span>
+        <span className="cvi-doc-more">Open</span>
       </button>
     )
   }
@@ -251,11 +259,22 @@ function Item({
   )
 }
 
-function firstProse(md: string): string {
-  for (const line of md.split('\n')) {
-    const t = line.trim()
-    if (!t || t.startsWith('#') || t.startsWith('>') || t.startsWith('|')) continue
-    return t.replace(/[*`_[\]]/g, '').slice(0, 150)
+/**
+ * Enough of the document to be worth reading, and no more.
+ *
+ * Cut at a line boundary rather than a character count so a heading is never
+ * sliced in half, and drop the top-level title — the card already carries it,
+ * and repeating it wastes the first and most visible line.
+ */
+function excerpt(md: string, maxLines = 26): string {
+  const lines = md.split('\n')
+  const start = lines.findIndex((l) => l.trim() && !l.startsWith('# '))
+  const body = lines.slice(start === -1 ? 0 : start)
+
+  const out: string[] = []
+  for (const line of body) {
+    if (out.length >= maxLines) break
+    out.push(line)
   }
-  return ''
+  return out.join('\n')
 }

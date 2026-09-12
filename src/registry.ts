@@ -553,3 +553,99 @@ export function projectSummary(id: string) {
     brief: briefs.find((b) => b.scope.kind === 'project' && b.scope.project === id),
   }
 }
+
+// --- canvases as the navigable unit -----------------------------------------
+
+/**
+ * A canvas is one FEATURE'S surface, and it is what you open.
+ *
+ * The project used to be a single canvas holding every exploration, which does
+ * not survive a real project: at six features it is a wall, and the thing you
+ * came to look at is somewhere in it. So the hierarchy is
+ *
+ *   home  ->  project  ->  canvas
+ *
+ * where the first two are indexes and only the last is a working surface. A
+ * project's blueprints get a synthetic entry so they are reachable the same
+ * way, without pretending they are an exploration.
+ */
+export type CanvasEntry = {
+  id: string
+  kind: 'blueprints' | 'exploration'
+  project: string
+  title: string
+  lede?: string
+  question?: string
+  exploration?: Exploration
+  /** Frames for the index thumbnails, in canvas order. */
+  frames: ViewEntry[]
+  manifest?: CanvasManifest
+}
+
+function framesOfCanvas(c: CanvasManifest): ViewEntry[] {
+  const ids = c.sections.flatMap((s) => s.rows.flatMap((r) => r.frames.map((f) => f.view)))
+  return ids.map((id) => viewById(id)).filter((v): v is ViewEntry => Boolean(v))
+}
+
+export function blueprintsCanvasId(project: string): string {
+  return `${project}/blueprints`
+}
+
+export function canvasEntriesFor(project: string): CanvasEntry[] {
+  const entries: CanvasEntry[] = []
+
+  const bps = blueprintsFor(project)
+  if (bps.length > 0) {
+    entries.push({
+      id: blueprintsCanvasId(project),
+      kind: 'blueprints',
+      project,
+      title: 'Blueprints',
+      lede: 'Production-faithful reference screens. Everything else branches from these.',
+      frames: bps,
+    })
+  }
+
+  // Live explorations first, then kept ones — same prominence rule as before.
+  for (const e of [...liveExplorations(project), ...pastExplorations(project)]) {
+    for (const c of e.canvases) {
+      entries.push({
+        id: c.id,
+        kind: 'exploration',
+        project,
+        title: c.title,
+        lede: c.lede,
+        question: e.question,
+        exploration: e,
+        frames: framesOfCanvas(c),
+        manifest: c,
+      })
+    }
+    // An exploration with frames but no canvas.json still needs a home.
+    if (e.canvases.length === 0 && e.views.length > 0) {
+      entries.push({
+        id: `${e.id}/frames`,
+        kind: 'exploration',
+        project,
+        title: e.title,
+        question: e.question,
+        exploration: e,
+        frames: e.views,
+      })
+    }
+  }
+
+  return entries
+}
+
+export function canvasEntryById(id: string): CanvasEntry | undefined {
+  const project = id.startsWith(`${id.split('/')[0]}/`) ? id.split('/')[0] : undefined
+  // Try the owning project first, then fall back to a full scan — an
+  // exploration canvas id is `<who>/<project>/<slug>/<name>`, so its first
+  // segment is a contributor, not a project.
+  for (const p of project ? [project, ...projects.map((x) => x.id)] : projects.map((x) => x.id)) {
+    const found = canvasEntriesFor(p).find((e) => e.id === id)
+    if (found) return found
+  }
+  return undefined
+}

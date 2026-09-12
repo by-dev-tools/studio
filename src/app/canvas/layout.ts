@@ -1,10 +1,9 @@
 import { DEVICES, outerSize, type DeviceId } from '../../kit/device'
 import {
-  blueprintsFor,
-  liveExplorations,
-  pastExplorations,
+  canvasEntryById,
   projectById,
-  projectSummary,
+  viewById,
+  type CanvasEntry,
   type CanvasManifest,
   type Exploration,
   type ViewEntry,
@@ -28,7 +27,6 @@ import type { Rect } from './useViewport'
 const PAD = 52
 const GAP_X = 64
 const GAP_Y = 76
-const SUB_GAP = 72
 const COLUMN_GAP = 180
 /**
  * Width budget before a new shelf starts, in world units. Roughly four phone
@@ -40,8 +38,14 @@ const SHELF_GAP = 320
 const CAPTION_H = 96
 const TITLE_H = 58
 const META_H = 38
-const DOC_CARD_W = 400
-const DOC_CARD_H = 128
+const DOC_CARD_W = 420
+/**
+ * Tall enough to be worth reading on the canvas, bounded so it never becomes
+ * the canvas. A one-line preview was the worst of both: it looked like a
+ * document and delivered a caption, so the only way to get value was to open
+ * it — which made the object on the board pure furniture.
+ */
+const DOC_CARD_H = 480
 
 export type Placed =
   | {
@@ -311,35 +315,45 @@ function emptyNote(id: string, text: string, w = 520): Built {
 
 // --- the board ---------------------------------------------------------------
 
-export function buildLayout(projectId: string): Layout {
-  const project = projectById(projectId)
-  const { brief } = projectSummary(projectId)
-
-  // Live work first and prominent; work that shipped or stopped is KEPT, on its
-  // own shelf below a divider. Deleting it would throw away the reason a
-  // decision was made; leaving it mixed in would make the board about history
-  // rather than about what is in flight.
-  const live: Built[] = [blueprintSection(projectId, project)]
-  for (const e of liveExplorations(projectId)) {
-    live.push(explorationSection(e, projectId, project))
+/**
+ * One canvas — one feature's surface.
+ *
+ * Sections become the top-level containers. There is no project-level wrapper
+ * any more: the project is an index now, and the thing you open is a single
+ * question with its candidates.
+ */
+export function buildLayout(canvasId: string): Layout {
+  const entry = canvasEntryById(canvasId)
+  if (!entry) {
+    return { items: [], tree: [], bounds: { x: 0, y: 0, w: 1, h: 1 } }
   }
-  live.push(briefSection(projectId, brief?.markdown))
+  const project = projectById(entry.project)
 
-  const past = pastExplorations(projectId).map((e) =>
-    explorationSection(e, projectId, project, true),
-  )
+  let columns: Built[] =
+    entry.kind === 'blueprints'
+      ? [blueprintColumn(entry, project)]
+      : explorationColumns(entry, project)
 
-  const board = packColumns(live, past)
+  if (columns.length === 0) {
+    columns = [
+      container(
+        { id: `${entry.id}-empty`, title: entry.title, level: 1 },
+        emptyNote(`${entry.id}-none`, 'Nothing on this canvas yet.'),
+      ),
+    ]
+  }
 
-  // The board's name sits above the strip — the only object outside a
+  const board = packColumns(columns)
+
+  // The canvas's name sits above the board — the only object outside a
   // container, because it names the board rather than living on it.
   const items: Placed[] = [
     {
       kind: 'title',
       id: 'board-title',
-      rect: { x: 0, y: -130, w: 1200, h: 100 },
-      text: project?.name ?? projectId,
-      note: project?.tagline,
+      rect: { x: 0, y: -150, w: 1400, h: 120 },
+      text: entry.title,
+      note: entry.question ?? entry.lede,
     },
     ...board.items,
   ]
@@ -347,61 +361,43 @@ export function buildLayout(projectId: string): Layout {
   return { items, tree: board.nodes, bounds: boundsOf(items) }
 }
 
-function deviceFor(
-  v: ViewEntry,
-  project: ReturnType<typeof projectById>,
-  canvas?: CanvasManifest,
-  override?: DeviceId,
-): DeviceId {
-  return override ?? v.meta.device ?? canvas?.device ?? project?.device ?? 'iphone-16'
+function blueprintColumn(entry: CanvasEntry, project: ReturnType<typeof projectById>): Built {
+  return container(
+    { id: 's-blueprints', title: 'Blueprints', level: 1 },
+    rowOf(
+      entry.frames.map((v) =>
+        frame(
+          {
+            view: v,
+            device: deviceFor(v, project),
+            mode: v.meta.mode ?? project?.defaultMode,
+            tokenScope: project?.tokenScope,
+          },
+          v.id,
+        ),
+      ),
+      GAP_X,
+    ),
+  )
 }
 
-function blueprintSection(projectId: string, project: ReturnType<typeof projectById>): Built {
-  const blueprints = blueprintsFor(projectId)
-  const body =
-    blueprints.length === 0
-      ? emptyNote(
-          'e-blueprints',
-          `Nothing ported from ${project?.sourceRepo ?? 'the source repo'} yet.`,
-        )
-      : rowOf(
-          blueprints.map((v) =>
-            frame(
-              {
-                view: v,
-                device: deviceFor(v, project),
-                mode: v.meta.mode ?? project?.defaultMode,
-                tokenScope: project?.tokenScope,
-              },
-              v.id,
-            ),
-          ),
-          GAP_X,
-        )
-
-  return container({ id: 's-blueprints', title: 'Blueprints', level: 1 }, body)
-}
-
-function explorationSection(
-  e: Exploration,
-  projectId: string,
+/** Each canvas SECTION is its own container, laid left to right. */
+function explorationColumns(
+  entry: CanvasEntry,
   project: ReturnType<typeof projectById>,
-  past = false,
-): Built {
-  const blueprints = blueprintsFor(projectId)
+): Built[] {
+  const e = entry.exploration
+  const canvas = entry.manifest
+  const columns: Built[] = []
   const placed = new Set<string>()
-  const parts: Built[] = []
 
-  for (const canvas of e.canvases) {
-    // Each canvas section is its own container, laid left to right — a
-    // question's candidates read ACROSS. Stacking them makes the board narrow
-    // and enormously tall, which drives fit to an illegible zoom.
-    const subs = canvas.sections.map((section, si) => {
+  if (canvas) {
+    for (const [si, section] of canvas.sections.entries()) {
       const rows = section.rows.map((row, ri) =>
         rowOf(
           row.frames.map((f, fi) => {
             placed.add(f.view)
-            const v = e.views.find((x) => x.id === f.view) ?? blueprints.find((x) => x.id === f.view)
+            const v = viewById(f.view)
             return frame(
               v
                 ? {
@@ -418,24 +414,26 @@ function explorationSection(
           GAP_X,
         ),
       )
-      return container(
-        {
-          id: `${canvas.id}-s${si}`,
-          title: section.title ?? `Section ${si + 1}`,
-          note: section.note,
-          level: 2,
-        },
-        stack(rows, GAP_Y),
+      columns.push(
+        container(
+          {
+            id: `${canvas.id}-s${si}`,
+            title: section.title ?? `Section ${si + 1}`,
+            note: section.note,
+            exploration: si === 0 ? e : undefined,
+            level: 1,
+          },
+          stack(rows, GAP_Y),
+        ),
       )
-    })
-    parts.push(rowOf(subs, SUB_GAP))
+    }
   }
 
-  const loose = e.views.filter((v) => !placed.has(v.id))
+  const loose = (e?.views ?? entry.frames).filter((v) => !placed.has(v.id))
   if (loose.length > 0) {
-    parts.push(
+    columns.push(
       container(
-        { id: `${e.id}-loose`, title: 'Other frames', level: 2 },
+        { id: `${entry.id}-loose`, title: canvas ? 'Other frames' : 'Frames', level: 1 },
         rowOf(
           loose.map((v) =>
             frame(
@@ -454,46 +452,35 @@ function explorationSection(
     )
   }
 
-  const docs = ([['Brief', e.brief?.markdown], ['Notes', e.notes]] as const).filter(([, md]) =>
+  const docs = ([['Brief', e?.brief?.markdown], ['Notes', e?.notes]] as const).filter(([, md]) =>
     Boolean(md),
   )
   if (docs.length > 0) {
-    parts.push(
+    columns.push(
       container(
-        { id: `${e.id}-docs`, title: 'Writing', level: 2 },
+        { id: `${entry.id}-docs`, title: 'Writing', level: 1 },
         rowOf(
-          docs.map(([label, md]) => docCard(`${e.id}-${label}`, label, md!)),
+          docs.map(([label, md]) => docCard(`${entry.id}-${label}`, label, md!)),
           GAP_X,
         ),
       ),
     )
   }
 
-  const lede = e.canvases.find((c) => c.lede)?.lede
-
-  return container(
-    {
-      id: `s-${e.slug}`,
-      title: e.title,
-      eyebrow: e.who,
-      note: [e.question, lede].filter(Boolean).join('\n\n'),
-      exploration: e,
-      level: 1,
-      past,
-    },
-    stack(parts.length > 0 ? parts : [emptyNote(`${e.id}-empty`, 'No frames yet.')], SUB_GAP),
-  )
+  return columns
 }
 
-function briefSection(projectId: string, markdown?: string): Built {
-  const body = markdown
-    ? docCard('d-brief', 'Project brief', markdown)
-    : emptyNote(
-        'e-brief',
-        `No project brief. Add projects/${projectId}/brief.md — it is the first thing read before any exploration here.`,
-      )
-  return container({ id: 's-brief', title: 'Brief', level: 1 }, body)
+function deviceFor(
+  v: ViewEntry,
+  project: ReturnType<typeof projectById>,
+  canvas?: CanvasManifest,
+  override?: DeviceId,
+): DeviceId {
+  return override ?? v.meta.device ?? canvas?.device ?? project?.device ?? 'iphone-16'
 }
+
+
+
 
 // --- measurement -------------------------------------------------------------
 

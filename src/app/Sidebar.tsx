@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { projects, statusLabel } from '../registry'
+import { canvasEntriesFor, projects, statusLabel } from '../registry'
 import type { Node } from './canvas/layout'
 import type { Rect } from './canvas/useViewport'
 
@@ -12,10 +12,12 @@ import type { Rect } from './canvas/useViewport'
  */
 export function Sidebar({
   activeProject,
+  activeCanvas,
   tree,
   onJump,
 }: {
   activeProject?: string
+  activeCanvas?: string
   tree: Node[]
   onJump: (rect: Rect, id: string) => void
 }) {
@@ -81,11 +83,36 @@ export function Sidebar({
                   <span className="sb-item-name sb-label">{p.name}</span>
                 </a>
 
+                {/* An open project lists its canvases; the open canvas lists
+                    its own sections beneath it. Two levels, so the rail shows
+                    where you are without showing everything at once. */}
                 {active && (
                   <div className="sb-tree sb-label">
-                    {tree.map((node) => (
-                      <TreeNode key={node.id} node={node} depth={0} onJump={onJump} />
-                    ))}
+                    {canvasEntriesFor(p.id).map((entry) => {
+                      const open = entry.id === activeCanvas
+                      return (
+                        <div className="sb-node" key={entry.id}>
+                          <div className="sb-nodeRow">
+                            <span className="sb-twist is-leaf" aria-hidden />
+                            <a
+                              className="sb-nodeName"
+                              href={`#/c/${entry.id}`}
+                              aria-current={open ? 'page' : undefined}
+                              title={entry.title}
+                            >
+                              {entry.title}
+                            </a>
+                          </div>
+                          {open && tree.length > 0 && (
+                            <div className="sb-children">
+                              {tree.map((node) => (
+                                <TreeNode key={node.id} node={node} depth={1} onJump={onJump} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                     {status && <span className="sb-note">{status}</span>}
                   </div>
                 )}
